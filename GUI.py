@@ -1,5 +1,5 @@
 import tkinter
-from random import randint
+from random import randint, uniform
 from tkinter import *
 from clustering import *
 
@@ -28,12 +28,15 @@ class GUI:
         self.clusters = []
         self.points = []
         self.global_potential = []
-        self.alpha = 0.1
+        self.alpha = 2
         self.pot_p = []
         self.steps = []
         self.current_step = 0
         self.dist_fn = euclid_distance
 
+        # new
+
+        self.div_matrix = []
 
 
         # buttons
@@ -44,7 +47,7 @@ class GUI:
         self.b_show_points = Button(self.window, text="Добавить точки", command=self.show_points)
         self.b_show_points.grid(row=1, column=1)
 
-        self.b_show_pots = Button(self.window, text="Показать потенциалы", command=self.show_potentials)
+        self.b_show_pots = Button(self.window, text="Первичные центры", command=self.show_potentials)
         self.b_show_pots.config(state=DISABLED)
         self.b_show_pots.grid(row=1, column=2)
 
@@ -52,9 +55,9 @@ class GUI:
         self.b_next_spike.config(state=DISABLED)
         self.b_next_spike.grid(row=1, column=3)
 
-        self.b_prev_spike = Button(self.window, text="Предыдущая итерация", command=self.prev)
-        self.b_prev_spike.config(state=DISABLED)
-        self.b_prev_spike.grid(row=1, column=4)
+        # self.b_prev_spike = Button(self.window, text="Предыдущая итерация", command=self.prev)
+        # self.b_prev_spike.config(state=DISABLED)
+        # self.b_prev_spike.grid(row=1, column=4)
         self.l_step_var = StringVar()
         self.l_step_var.set(self.current_step)
         self.l_step = Label(self.window, textvariable=self.l_step_var)
@@ -63,24 +66,24 @@ class GUI:
 
         self.clusters_label = Label(self.window, text="Шаг: ")
         self.clusters_label.grid(row=2, column=0)
-        self.b_clusterize = Button(self.window, text="Кластеризовать", command=self.clusterize)
-        self.b_clusterize.config(state=DISABLED)
-        self.b_clusterize.grid(row=1, column=5)
+        # self.b_clusterize = Button(self.window, text="Кластеризовать", command=self.clusterize)
+        # self.b_clusterize.config(state=DISABLED)
+        # self.b_clusterize.grid(row=1, column=5)
 
-        self.l_alpha = Label(self.window, text="Альфа:")
-        self.l_alpha.grid(row=2, column=2)
+        # self.l_alpha = Label(self.window, text="Альфа:")
+        # self.l_alpha.grid(row=2, column=2)
+        #
+        #
+        # self.alpha_var = StringVar()
+        # self.alpha_var.set("0.1")
+        # self.t_alpha = Entry(self.window, textvariable=self.alpha_var)
+        # self.t_alpha.grid(row=2, column=3)
 
-
-        self.alpha_var = StringVar()
-        self.alpha_var.set("0.1")
-        self.t_alpha = Entry(self.window, textvariable=self.alpha_var)
-        self.t_alpha.grid(row=2, column=3)
-
-        self.b_alpha = Button(self.window, text="Задать", command=self.set_alpha)
-        self.b_alpha.grid(row=2, column=4)
-
-        self.l_alpha = Label(self.window, text="Альфа:")
-        self.l_alpha.grid(row=2, column=2)
+        # self.b_alpha = Button(self.window, text="Задать", command=self.set_alpha)
+        # self.b_alpha.grid(row=2, column=4)
+        #
+        # self.l_alpha = Label(self.window, text="Альфа:")
+        # self.l_alpha.grid(row=2, column=2)
 
         self.c = 3
         self.c_var = StringVar()
@@ -93,15 +96,15 @@ class GUI:
 
         self.window.mainloop()
 
-    def set_alpha(self):
-        self.alpha = float(self.alpha_var.get())
+    # def set_alpha(self):
+    #     self.alpha = float(self.alpha_var.get())
 
     def set_c(self):
         self.c = int(self.c_var.get())
 
     def clean(self):
         self.canvas.delete(self.canvas, ALL)
-        self.alpha = 0.1
+        self.alpha = 5
         self.clusters = []
         self.clusters_num = 3
         self.global_potential = []
@@ -110,11 +113,11 @@ class GUI:
         self.steps = []
         self.current_step = 0
 
-        self.b_show_points.config(state=NORMAL)
-        self.b_show_pots.config(state=DISABLED)
-        self.b_next_spike.config(state=DISABLED)
-        self.b_prev_spike.config(state=DISABLED)
-        self.b_clusterize.config(state=DISABLED)
+        # self.b_show_points.config(state=NORMAL)
+        # self.b_show_pots.config(state=DISABLED)
+        # self.b_next_spike.config(state=DISABLED)
+        # self.b_prev_spike.config(state=DISABLED)
+        # self.b_clusterize.config(state=DISABLED)
 
 
     def show_points(self):
@@ -127,27 +130,31 @@ class GUI:
         for c in self.clusters:
             self.draw_arc(c)
 
+        for c in self.clusters:
+            for p in c:
+                self.points.append(p)
+
+        for c in self.clusters:
+            ps = []
+            for p in self.points:
+                ps.append(uniform(0, 1))
+
+            s = sum(ps)
+            ps = [i/s for i in ps]
+            self.div_matrix.append(ps)
+        print(self.div_matrix)
+
+
         self.b_show_pots.config(state=NORMAL)
 
     def show_potentials(self):
         self.canvas.delete(self.canvas, ALL)
 
-        for c in self.clusters:
-            for p in c:
-                self.points.append(p)
-
-        # self.alpha = calc_avg_dist(self.points, euclid_distance)
-
         print("alpha: {0}".format(self.alpha))
 
-        self.pot_p = calc_potential(self.points, self.dist_fn, self.alpha)
-
-        # assign colors
-
-        colored_points = self.colorize(self.pot_p)
-
-        self.draw_colored_dots(colored_points)
-        self.prepare_steps()
+        self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points)
+        self.draw_centroids()
+        self.b_next_spike.config(state=NORMAL)
 
     def colorize(self, points):
         max_p = max(points, key=lambda x: x[1])[1]
@@ -167,34 +174,12 @@ class GUI:
             colored_points.append((coords, hex_color))
         return colored_points
 
-    def prepare_steps(self):
-        sorted_pot_p = sort_by_potential(self.pot_p)
-        print(sorted_pot_p)
-        self.steps.append(self.colorize(sorted_pot_p))
-        for i in range(self.c - 1):
-            iter_pot_p = sub_cluster_potential(sorted_pot_p, self.alpha, self.dist_fn)
-            sorted_pot_p = sort_by_potential(iter_pot_p)
-            print(len(sorted_pot_p))
-            print(sorted_pot_p)
-
-            colored = self.colorize(sorted_pot_p)
-            print("len: {0}".format(len(colored)))
-            self.steps.append(colored)
-
-        self.b_next_spike.config(state=NORMAL)
-        self.b_prev_spike.config(state=NORMAL)
-        self.b_clusterize.config(state=NORMAL)
-
 
     def next(self):
-        self.draw_colored_dots(self.steps[self.current_step])
 
-        (x, y), color = self.steps[self.current_step][0]
-        print(x, y)
-        self.canvas.create_oval(self.get_screen_coords(x - 4, y - 4, x + 4, y + 4), fill="red")
-        self.l_step_var.set(self.current_step)
-        if self.current_step < len(self.steps) - 1:
-            self.current_step += 1
+        self.div_matrix = calc_div_matrix(self.alpha, self.centroids, self.points, euclid_distance)
+        self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points)
+        self.draw_centroids()
 
     def prev(self):
         if self.current_step > 0:
@@ -205,18 +190,6 @@ class GUI:
         self.canvas.create_oval(self.get_screen_coords(x - 4, y - 4, x + 4, y + 4), fill="red")
         self.l_step_var.set(self.current_step)
 
-    def clusterize(self):
-        clusters = []
-        for step in self.steps:
-            clusters.append(step[0][0])
-
-        clustered = clusterize(clusters, self.points, self.dist_fn)
-        print(len(clustered.keys()))
-        for (x, y), ps in clustered.items():
-            color = "#" + hex(randint(0, 255*255*255))[2:].zfill(6)
-            for xp, yp in ps:
-                self.canvas.create_oval(self.get_screen_coords(xp - 2, yp - 2, xp + 2, yp + 2), fill=color)
-            self.canvas.create_oval(self.get_screen_coords(x - 4, y - 4, x + 4, y + 4), fill="red")
 
 
     def draw_colored_dots(self, points):
@@ -225,6 +198,27 @@ class GUI:
         for (x, y), color in points:
             # print("Draw dots: {0}".format(color))
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill=color)
+
+    def draw_centroids(self):
+        self.canvas.delete(self.canvas, ALL)
+
+        for i, c in enumerate(self.clusters):
+            for j, (x, y) in enumerate(self.points):
+                color = int(255 * self.div_matrix[i][j])
+                if color > 255:
+                    color = 255
+                elif color < 0:
+                    color = 0
+                self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="#" + hex(color)[2:].zfill(2) + hex(color)[2:].zfill(2) + hex(color)[2:].zfill(2))
+
+
+
+        # for x, y in self.points:
+        #     # print("Draw dots: {0}".format(color))
+        #     self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="black")
+
+        for x, y in self.centroids:
+            self.canvas.create_oval(self.get_screen_coords(x - 3, y - 3, x + 3, y + 3), fill="red")
 
     def draw_arc(self, arc):
         """

@@ -24,59 +24,46 @@ def euclid_distance(point_a, point_b):
 def schematic_distance(point_a, point_b):
     return abs(point_a[0] - point_b[0]) + abs(point_a[1] - point_b[1])
 
-def potential(alpha, dist_fn, point_a, point_b):
-    return exp(-alpha * dist_fn(point_a, point_b))
 
 
-def calc_potential(points, dist_fn, alpha):
-    pis = []
-    for pi in points:
-        pk_sum = 0
-        for pk in points:
-            if pi != pk:
-                pot = potential(alpha, dist_fn, pi, pk)
-                pk_sum += pot
-        pis.append((pi, pk_sum))
-    return pis
+def calc_centroids(alpha, div_matrix, points):
+    centroids = []
+    for i in range(3):
+        sum_ax = 0
+        sum_ay = 0
+        sum_bx = 0
+        sum_by = 0
+        for j, (x, y) in enumerate(points):
+            sum_ax += pow(div_matrix[i][j], alpha) * x
+            sum_ay += pow(div_matrix[i][j], alpha) * y
+            sum_bx += pow(div_matrix[i][j], alpha)
+            sum_by += pow(div_matrix[i][j], alpha)
+        ca = sum_ax / sum_bx
+        cb = sum_ay / sum_by
+        centroids.append((ca, cb))
+        print(centroids)
+    return centroids
+
+
+def calc_div_matrix(alpha, centroids, points, dist_fn):
+    div_matrix = []
+    for i, c in enumerate(centroids):
+        ps = []
+        for j, p in enumerate(points):
+            s = 0
+            for c in centroids:
+                s += 1 / (dist_fn(c, p) ** 2)
+            res = (dist_fn(p, c) * s) ** (1 / (alpha - 1))
+            ps.append(res)
+        div_matrix.append(ps)
+    return div_matrix
 
 
 def sort_by_potential(points):
     return sorted(points, key=lambda x: x[1], reverse=True)
 
 
-def sub_cluster_potential(points, beta, dist_fn):
-    ps = []
-    cluster_point, cluster_potential = points[0]
-    for p, pot in points[1:]:
-        new_potential = pot - cluster_potential * potential(beta, dist_fn, cluster_point, p)
-        ps.append((p, new_potential))
-    return ps
 
-
-def calc_avg_dist(points, dist_fn):
-    dist_sum = 0
-    checked = []
-    for p1 in points:
-        for p2 in points:
-            if p1 != p2 and (p1, p2) not in checked and (p2, p1) not in checked:
-                dist_sum += dist_fn(p1, p2)
-                checked.append((p1, p2))
-    return dist_sum / len(points)
-
-
-def clusterize(cluster_centers, points, dist_fn):
-        clusters = dict()
-        for cc in cluster_centers:
-            if cc not in clusters:
-                clusters[cc] = []
-        for point in points:
-            dists = []
-            for cluster in cluster_centers:
-                dist = dist_fn(cluster, point)
-                dists.append((cluster, dist))
-            c = max(dists, key=lambda x: x[1])
-            clusters[c[0]].append(point)
-        return clusters
 
 
 
