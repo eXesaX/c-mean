@@ -3,6 +3,7 @@ from math import sin, cos, radians
 from numpy import linspace
 from numpy.random import normal
 from math import sqrt, exp
+import numpy as np
 
 
 def get_cluster(num_of_points, d, X, Y):
@@ -13,7 +14,7 @@ def get_cluster(num_of_points, d, X, Y):
         y = Y + norm[i] * sin(radians(k))
         points.append((x, y))
 
-    return points
+    return np.array(points)
 
 
 def euclid_distance(point_a, point_b):
@@ -21,12 +22,12 @@ def euclid_distance(point_a, point_b):
     x1, y1 = point_b
     return sqrt((x0 - x1) ** 2 + (y0 - y1) ** 2)
 
+
 def schematic_distance(point_a, point_b):
     return abs(point_a[0] - point_b[0]) + abs(point_a[1] - point_b[1])
 
 
-
-def calc_centroids(alpha, div_matrix, points):
+def calc_centroids(alpha, div_matrix, points, old):
     centroids = []
     for i in range(3):
         sum_ax = 0
@@ -41,19 +42,22 @@ def calc_centroids(alpha, div_matrix, points):
         ca = sum_ax / sum_bx
         cb = sum_ay / sum_by
         centroids.append((ca, cb))
-        print(centroids)
+    if old:
+        for j, o in enumerate(old):
+            if euclid_distance(o, centroids[j]) < 1:
+                return None
     return centroids
 
 
 def calc_div_matrix(alpha, centroids, points, dist_fn):
     div_matrix = []
-    for i, c in enumerate(centroids):
+    for i, centr in enumerate(centroids):
         ps = []
         for j, p in enumerate(points):
             s = 0
             for c in centroids:
                 s += 1 / (dist_fn(c, p) ** 2)
-            res = (dist_fn(p, c) * s) ** (1 / (alpha - 1))
+            res = ((dist_fn(p, centr) ** 2) * s) ** (1 / (alpha - 1))
             ps.append(res)
         div_matrix.append(ps)
     return div_matrix

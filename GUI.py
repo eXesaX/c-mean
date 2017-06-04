@@ -2,7 +2,7 @@ import tkinter
 from random import randint, uniform
 from tkinter import *
 from clustering import *
-
+from pprint import pprint
 
 class GUI:
     def __init__(self, width=700, height=600):
@@ -37,9 +37,9 @@ class GUI:
         # new
 
         self.div_matrix = []
+        self.centroids = []
 
-
-        # buttons
+    # buttons
 
         self.b_clean = Button(self.window, text="Очистить", command=self.clean)
         self.b_clean.grid(row=1, column=0)
@@ -152,7 +152,7 @@ class GUI:
 
         print("alpha: {0}".format(self.alpha))
 
-        self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points)
+        self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points, self.centroids)
         self.draw_centroids()
         self.b_next_spike.config(state=NORMAL)
 
@@ -176,17 +176,22 @@ class GUI:
 
 
     def next(self):
+        try:
+            self.div_matrix = calc_div_matrix(self.alpha, self.centroids, self.points, euclid_distance)
+            self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points, self.centroids)
+            if self.centroids is None:
+                self.b_next_spike.config(state=DISABLED)
+            else:
+                self.draw_centroids()
+        except ZeroDivisionError:
+            self.b_next_spike.config(state=DISABLED)
 
-        self.div_matrix = calc_div_matrix(self.alpha, self.centroids, self.points, euclid_distance)
-        self.centroids = calc_centroids(self.alpha, self.div_matrix, self.points)
-        self.draw_centroids()
 
     def prev(self):
         if self.current_step > 0:
                 self.current_step -= 1
         self.draw_colored_dots(self.steps[self.current_step])
         (x, y), color = self.steps[self.current_step][0]
-        print(x, y)
         self.canvas.create_oval(self.get_screen_coords(x - 4, y - 4, x + 4, y + 4), fill="red")
         self.l_step_var.set(self.current_step)
 
@@ -201,15 +206,20 @@ class GUI:
 
     def draw_centroids(self):
         self.canvas.delete(self.canvas, ALL)
-
-        for i, c in enumerate(self.clusters):
-            for j, (x, y) in enumerate(self.points):
-                color = int(255 * self.div_matrix[i][j])
-                if color > 255:
-                    color = 255
-                elif color < 0:
-                    color = 0
-                self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="#" + hex(color)[2:].zfill(2) + hex(color)[2:].zfill(2) + hex(color)[2:].zfill(2))
+        colors = {
+            0: 0xFF0000,
+            1: 0x00FF00,
+            2: 0x0000FF,
+        }
+        for j, (x, y) in enumerate(self.points):
+            blended_color = 0x000000
+            for i, c in enumerate(self.clusters):
+                blended_color += int(0.1 * colors[i] * self.div_matrix[i][j])
+                if blended_color > 0xFFFFFF:
+                    blended_color = 0xFFFFFF
+                elif blended_color < 0:
+                    blended_color = 0
+            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="#" + hex(blended_color)[2:].zfill(6))
 
 
 
