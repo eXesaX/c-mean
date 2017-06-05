@@ -28,39 +28,53 @@ def schematic_distance(point_a, point_b):
 
 
 def calc_centroids(alpha, div_matrix, points, old):
-    centroids = []
-    for i in range(3):
-        sum_ax = 0
-        sum_ay = 0
-        sum_bx = 0
-        sum_by = 0
-        for j, (x, y) in enumerate(points):
-            sum_ax += pow(div_matrix[i][j], alpha) * x
-            sum_ay += pow(div_matrix[i][j], alpha) * y
-            sum_bx += pow(div_matrix[i][j], alpha)
-            sum_by += pow(div_matrix[i][j], alpha)
-        ca = sum_ax / sum_bx
-        cb = sum_ay / sum_by
-        centroids.append((ca, cb))
-    if old:
-        for j, o in enumerate(old):
-            if euclid_distance(o, centroids[j]) < 1:
-                return None
+    top_sum_x = np.sum(div_matrix ** alpha * points[:, :, 0], axis=1)
+    top_sum_y = np.sum(div_matrix ** alpha * points[:, :, 1], axis=1)
+    top_sum_common = np.sum(div_matrix ** alpha, axis=1)
+
+    centroids_x = top_sum_x / top_sum_common
+    centroids_y = top_sum_y / top_sum_common
+
+    # for i in range(3):
+    #     sum_ax = 0
+    #     sum_ay = 0
+    #     sum_bx = 0
+    #     sum_by = 0
+    #     for j, (x, y) in enumerate(points):
+    #         sum_ax += pow(div_matrix[i][j], alpha) * x
+    #         sum_ay += pow(div_matrix[i][j], alpha) * y
+    #         sum_bx += pow(div_matrix[i][j], alpha)
+    #         sum_by += pow(div_matrix[i][j], alpha)
+    #     ca = sum_ax / sum_bx
+    #     cb = sum_ay / sum_by
+    #     centroids.append((ca, cb))
+    centroids = np.vstack([centroids_x, centroids_y]).T
+    print(centroids)
     return centroids
 
 
 def calc_div_matrix(alpha, centroids, points, dist_fn):
+
     div_matrix = []
-    for i, centr in enumerate(centroids):
+    for i in range(points.shape[0]):
         ps = []
-        for j, p in enumerate(points):
+        for j in range(points.shape[1]):
             s = 0
-            for c in centroids:
-                s += 1 / (dist_fn(c, p) ** 2)
-            res = ((dist_fn(p, centr) ** 2) * s) ** (1 / (alpha - 1))
+            for k in range(centroids.shape[0]):
+                s += 1 / ((dist_fn(centroids[k], points[i][j])) ** 2)
+            res = ((dist_fn(centroids[i], points[i][j]) ** 2) * s) ** (1 / (alpha - 1))
             ps.append(res)
         div_matrix.append(ps)
-    return div_matrix
+    #     ps = []
+    #     for j, p in enumerate(points):
+    #         s = 0
+    #         for c in centroids:
+    #             s += 1 / (dist_fn(c, p) ** 2)
+    #         res = ((dist_fn(p, centr) ** 2) * s) ** (1 / (alpha - 1))
+    #         ps.append(res)
+    #     div_matrix.append(ps)
+
+    return np.array(div_matrix)
 
 
 def sort_by_potential(points):
